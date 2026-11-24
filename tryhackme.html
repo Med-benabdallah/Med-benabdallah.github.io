@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TryHackMe · Mohamed Benabdallah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Single dark theme by choice. Layout idea: a terminal session as the header, then report-style chapters; project cards open a side panel, jobs expand in place. One amber accent, green only for live/ok, red only for severity. */
+  --bg: #0b0e12;
+  --surface: #12171d;
+  --raised: #171d25;
+  --ink: #e6e9ed;
+  --soft: #c9cfd6;
+  --muted: #8a94a1;
+  --line: #222a33;
+  --accent: #f2a541;
+  --ok: #4fc387;
+  --high: #ef5b4c;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --body: "IBM Plex Sans", "Segoe UI", Roboto, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.65 var(--body); -webkit-font-smoothing: antialiased; }
+body.locked { overflow: hidden; }
+a { color: var(--accent); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+.wrap { max-width: 1060px; margin: 0 auto; padding: 0 20px; }
+.mono { font-family: var(--mono); }
+.muted { color: var(--muted); }
+
+/* Nav */
+nav.top { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+nav.top .wrap { display: flex; justify-content: space-between; align-items: center; gap: 16px; height: 56px; }
+.brand { font: 700 14px/1 var(--mono); color: var(--ink); text-decoration: none; }
+.brand span { color: var(--accent); }
+.links { display: flex; gap: 20px; font: 400 13px/1 var(--mono); }
+.links a { color: var(--muted); text-decoration: none; }
+.links a:hover { color: var(--ink); }
+@media (max-width: 640px) { .links { display: none; } }
+
+/* Hero */
+.hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
+#graph { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .55; pointer-events: none; }
+.hero .wrap { position: relative; padding-top: 64px; padding-bottom: 64px; display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; }
+@media (max-width: 880px) { .hero .wrap { grid-template-columns: 1fr; padding-top: 40px; padding-bottom: 40px; } }
+.status { display: inline-flex; align-items: center; gap: 8px; font: 500 12px/1 var(--mono); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); padding: 7px 10px; border-radius: 4px; }
+.status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+h1 { font: 700 clamp(36px, 6vw, 60px)/1.05 var(--mono); letter-spacing: -.03em; margin: 20px 0 14px; text-wrap: balance; }
+.role { font: 500 15px/1.4 var(--mono); color: var(--accent); margin: 0 0 16px; }
+.lede { font-size: 17px; max-width: 54ch; margin: 0 0 26px; color: var(--soft); }
+.ctas { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn { font: 500 13px/1 var(--mono); padding: 12px 16px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #17110a; font-weight: 700; }
+
+/* Terminal */
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; box-shadow: 0 20px 60px -30px #000; }
+.term-bar { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--raised); }
+.term-bar i { width: 10px; height: 10px; border-radius: 50%; background: #2c3540; display: block; }
+.term-bar span { margin-left: 8px; font: 400 12px/1 var(--mono); color: var(--muted); }
+.term pre { margin: 0; padding: 18px; font: 400 13px/1.75 var(--mono); color: var(--soft); white-space: pre-wrap; overflow-x: auto; }
+.p { color: var(--ok); } .c { color: var(--ink); } .k { color: var(--muted); } .v { color: var(--accent); }
+.cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Sections */
+section { padding: 64px 0; border-bottom: 1px solid var(--line); }
+.sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+.sec-head .num { font: 500 13px/1 var(--mono); color: var(--accent); }
+.sec-hint { font: 400 13px/1.5 var(--mono); color: var(--muted); margin: 0 0 24px; }
+h2 { font: 700 26px/1.2 var(--mono); margin: 0; letter-spacing: -.02em; text-wrap: balance; }
+h3 { font: 600 19px/1.3 var(--body); margin: 0; }
+p { margin: 0 0 12px; max-width: 68ch; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 400 12px/1 var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 3px; color: var(--soft); background: var(--bg); }
+
+/* Project cards (clickable) */
+.projects { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 900px) { .projects { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .projects { grid-template-columns: 1fr; } }
+.pcard { text-align: left; font: inherit; color: inherit; cursor: pointer; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 22px; display: grid; gap: 12px; align-content: start; transition: border-color .2s, transform .2s, background .2s; }
+.pcard:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); background: var(--raised); transform: translateY(-2px); }
+.pcard.feature { grid-column: span 2; border-left: 3px solid var(--accent); }
+@media (max-width: 600px) { .pcard.feature { grid-column: auto; } }
+.pcard .meta { font: 400 12px/1.4 var(--mono); color: var(--muted); }
+.pcard .top { display: flex; justify-content: space-between; gap: 10px; align-items: start; }
+.pcard p { margin: 0; color: var(--soft); font-size: 15px; }
+.pcard .open { font: 500 12px/1 var(--mono); color: var(--accent); margin-top: 4px; }
+.pcard:hover .open { text-decoration: underline; text-underline-offset: 3px; }
+.mini-stats { display: flex; gap: 22px; flex-wrap: wrap; }
+.mini-stats div { font: 700 22px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.mini-stats span { display: block; font: 400 12px/1.4 var(--body); color: var(--muted); }
+.sev { font: 700 11px/1 var(--mono); text-transform: uppercase; padding: 5px 7px; border-radius: 3px; white-space: nowrap; }
+.sev.high { color: var(--high); border: 1px solid color-mix(in srgb, var(--high) 50%, transparent); }
+.sev.acc { color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+.sev.ok { color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 45%, transparent); }
+
+/* Experience (expandable) */
+.log { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.log details { border-top: 1px solid var(--line); }
+.log details:first-child { border-top: 0; }
+.log summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 170px 1fr 24px; gap: 20px; padding: 18px 22px; align-items: start; }
+.log summary::-webkit-details-marker { display: none; }
+.log summary:hover { background: var(--raised); }
+.log .when { font: 400 13px/1.6 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.log h3 { font-size: 17px; }
+.log .org { font: 400 13px/1.4 var(--mono); color: var(--accent); margin-top: 2px; }
+.log .one { font-size: 15px; color: var(--soft); margin: 6px 0 0; }
+.log .tog { font: 500 18px/1 var(--mono); color: var(--muted); text-align: right; padding-top: 2px; }
+.log details[open] .tog { color: var(--accent); }
+.log details[open] .tog::after { content: "−"; }
+.log details:not([open]) .tog::after { content: "+"; }
+.log .more { padding: 0 22px 22px calc(170px + 42px); display: grid; gap: 14px; }
+@media (max-width: 640px) {
+  .log summary { grid-template-columns: 1fr 24px; gap: 4px 12px; }
+  .log .when { grid-column: 1 / -1; order: -1; }
+  .log .more { padding: 0 22px 22px; }
+}
+.more h4 { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 8px; }
+ul.points { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+ul.points li { padding-left: 20px; position: relative; color: var(--soft); }
+ul.points li::before { content: ">"; position: absolute; left: 0; color: var(--accent); font-family: var(--mono); }
+.linkbtn { justify-self: start; font: 500 12px/1 var(--mono); color: var(--accent); background: none; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 4px; padding: 9px 12px; cursor: pointer; }
+.linkbtn:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* Skills */
+.skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 24px; margin-top: 20px; }
+.skills h3 { font: 500 12px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 12px; }
+.certs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 28px; }
+.cert { border: 1px solid var(--line); border-radius: 6px; padding: 16px; background: var(--surface); }
+.cert .k2 { font: 400 11px/1 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+.cert .v2 { font: 600 16px/1.35 var(--body); }
+
+/* Contact */
+.contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-top: 20px; }
+.c-item { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: grid; gap: 8px; }
+.c-item .k2 { font: 400 11px/1 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.c-item .val { font: 500 14px/1.4 var(--mono); word-break: break-all; }
+.c-item .btn { justify-self: start; }
+.copied { font: 400 12px/1 var(--mono); color: var(--ok); min-height: 12px; }
+footer { padding: 28px 0 44px; font: 400 12px/1.6 var(--mono); color: var(--muted); }
+
+
+/* Community */
+.mentor { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--ok); border-radius: 8px; padding: 26px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; }
+@media (max-width: 820px) { .mentor { grid-template-columns: 1fr; } }
+.mentor .meta { font: 400 12px/1.4 var(--mono); color: var(--muted); margin-bottom: 8px; }
+.mentor h3 { margin-bottom: 12px; }
+.mentor p { color: var(--soft); }
+.places { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-content: start; }
+.place { border: 1px solid var(--line); border-radius: 6px; padding: 14px; background: var(--bg); }
+.place .n { font: 700 26px/1.1 var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+.place .n sup { font-size: 13px; }
+.place .l { font-size: 13px; color: var(--muted); line-height: 1.4; margin-top: 4px; }
+.place.win { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+.place.win .n { color: var(--ok); }
+@media (max-width: 480px) { .places { grid-template-columns: 1fr 1fr; } }
+
+/* Detail panel */
+.scrim { position: fixed; inset: 0; background: rgba(3,5,8,.66); z-index: 20; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 100%); z-index: 21; background: var(--surface); border-left: 1px solid var(--line); transform: translateX(100%); transition: transform .25s ease; display: flex; flex-direction: column; }
+body.panel-open .scrim { opacity: 1; pointer-events: auto; }
+body.panel-open .panel { transform: none; }
+.panel-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--raised); }
+.panel-bar .path { font: 400 12px/1 var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.panel-bar .path b { color: var(--accent); font-weight: 500; }
+.close { font: 500 12px/1 var(--mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 9px 12px; cursor: pointer; }
+.close:hover { border-color: var(--accent); }
+.panel-body { overflow-y: auto; padding: 26px 24px 40px; display: grid; gap: 24px; align-content: start; }
+.panel-body h2 { font-size: 24px; }
+.panel-body .meta { font: 400 12px/1.5 var(--mono); color: var(--muted); margin-top: 8px; }
+.panel-body h4 { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; }
+.panel-body p { color: var(--soft); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 480px) { .stats { grid-template-columns: 1fr 1fr; } }
+.stat { border-left: 2px solid var(--accent); padding: 2px 0 2px 12px; }
+.stat .n { font: 700 24px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.stat .l { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.diagram { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 14px; overflow-x: auto; }
+.diagram svg { display: block; width: 100%; min-width: 420px; height: auto; }
+.diagram svg text { font-family: var(--mono); }
+.panel-nav { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px; }
+@media (prefers-reduced-motion: reduce) {
+  .cursor { animation: none; }
+  .pcard, .panel, .scrim { transition: none; }
+  .pcard:hover { transform: none; }
+}
+</style>
+<style>
+.wu-head { padding: 56px 0 40px; border-bottom: 1px solid var(--line); }
+.wu-head h1 { font-size: clamp(32px, 5vw, 48px); margin: 14px 0 12px; }
+.back { font: 400 13px/1 var(--mono); color: var(--muted); text-decoration: none; }
+.back:hover { color: var(--accent); }
+.dirs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.wu-list { display: grid; gap: 18px; }
+.wu { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 26px; display: grid; gap: 14px; }
+.wu .meta { font: 400 12px/1.5 var(--mono); color: var(--muted); }
+.wu h2 { font-size: 22px; }
+.wu .row { display: flex; justify-content: space-between; gap: 12px; align-items: start; flex-wrap: wrap; }
+.wu p { color: var(--soft); margin: 0; }
+.wu .read { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+</style>
+<style>
+.stats6 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 26px; }
+@media (max-width: 700px) { .stats6 { grid-template-columns: 1fr 1fr; } }
+.cats { display: grid; gap: 18px; margin-top: 20px; }
+.cat { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 24px; }
+.cat-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+.cat p { margin: 6px 0 14px; font-size: 15px; }
+.rooms { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 24px; }
+@media (max-width: 700px) { .rooms { grid-template-columns: 1fr; } }
+.room { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 15px; }
+.room a { color: var(--ink); text-decoration: none; flex: 1; min-width: 0; }
+.room a:hover { color: var(--accent); text-decoration: underline; }
+.dtag { font: 500 11px/1 var(--mono); padding: 4px 6px; border-radius: 3px; border: 1px solid var(--line); color: var(--muted); }
+.dtag.e { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+.dtag.i { color: var(--muted); }
+.wsoon { font: 400 11px/1 var(--mono); color: var(--muted); opacity: .7; white-space: nowrap; }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html">mohamed<span>@</span>benabdallah</a>
+    <div class="links">
+      <a href="index.html#work">work</a><a href="writeups.html">write-ups</a><a href="tryhackme.html" style="color:var(--ink)">tryhackme</a><a href="index.html#experience">experience</a><a href="index.html#contact">contact</a>
+    </div>
+  </div>
+</nav>
+
+<header class="wu-head">
+  <div class="wrap">
+    <a class="back" href="index.html">← back to portfolio</a>
+    <h1>TryHackMe</h1>
+    <p class="lede" style="margin:0">Hands-on training since December 2022: vulnerable machines, real CVEs, web attacks and the SOC Level 1 path. Every room below links to TryHackMe.</p>
+    <div class="dirs">
+      <a class="btn primary" href="https://tryhackme.com/p/erinmin">Profile: erinmin ↗</a>
+      <a class="btn" href="writeups.html">My write-ups</a>
+    </div>
+    <div class="stats6">
+      <div class="stat"><div class="n">Top 5%</div><div class="l">global ranking</div></div>
+      <div class="stat"><div class="n">91</div><div class="l">rooms completed</div></div>
+      <div class="stat"><div class="n">15</div><div class="l">badges · level 9</div></div>
+      <div class="stat"><div class="n">47</div><div class="l">day longest streak</div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="wrap">
+      <div class="sec-head"><span class="num">in progress</span><h2>SOC Level 1 path</h2></div>
+      <p class="sec-hint">Currently enrolled. Top tools so far: Linux, Nmap, Metasploit, Hydra, Gobuster, Dirbuster, Splunk.</p>
+      <div class="chips"><span class="chip">Linux</span><span class="chip">Nmap</span><span class="chip">Metasploit</span><span class="chip">Hydra</span><span class="chip">Gobuster</span><span class="chip">Dirbuster</span><span class="chip">Splunk</span><span class="chip">Silver league</span><span class="chip">9,239 points</span></div>
+    </div>
+  </section>
+  <section>
+    <div class="wrap">
+      <div class="sec-head"><span class="num">77 rooms</span><h2>Rooms by topic</h2></div>
+      <p class="sec-hint">Write-ups for these rooms are on the way; each one will link from here. Not listed: 12 onboarding and event rooms.</p>
+      <div class="toc">
+        <a class="chip" href="#boxes">Machines</a><a class="chip" href="#cve">CVEs</a><a class="chip" href="#offensive">Offensive &amp; web</a><a class="chip" href="#defensive">Defensive &amp; SOC</a><a class="chip" href="#foundations">Networking &amp; systems</a><a class="chip" href="#tools">Tools</a>
+      </div>
+      <div class="cats">
+        <article class="cat" id="boxes">
+          <div class="cat-head"><h3>Machines &amp; CTF boxes</h3><span class="mono muted">8 rooms</span></div>
+          <p class="muted">Full compromise of a vulnerable machine: recon, exploitation, privilege escalation.</p>
+          <ul class="rooms"><li class="room"><a href="https://tryhackme.com/room/blue">Blue</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/vulnversity">Vulnversity</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/ice">Ice</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/kenobi">Kenobi</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/blaster">Blaster</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/thecodcaper">The Cod Caper</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/overpass2hacked">Overpass 2 - Hacked</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/25daysofchristmas">Advent of Cyber 1 [2019]</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li></ul>
+        </article>
+        <article class="cat" id="cve">
+          <div class="cat-head"><h3>Real-world CVEs</h3><span class="mono muted">6 rooms</span></div>
+          <p class="muted">Hands-on exploitation of published vulnerabilities.</p>
+          <ul class="rooms"><li class="room"><a href="https://tryhackme.com/room/pwnkit">Pwnkit: CVE-2021-4034</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/papercut">PaperCut: CVE-2023-27350</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/confluence202322515">Confluence CVE-2023-22515</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/erlangotpsshcve202532433">Erlang/OTP SSH: CVE-2025-32433</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/sudovulnsbypass">Sudo Security Bypass</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/sudovulnsbof">Sudo Buffer Overflow</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li></ul>
+        </article>
+        <article class="cat" id="offensive">
+          <div class="cat-head"><h3>Offensive security &amp; web</h3><span class="mono muted">19 rooms</span></div>
+          <p class="muted">Pentest methodology, recon, web attacks and red team tooling.</p>
+          <ul class="rooms"><li class="room"><a href="https://tryhackme.com/room/pentestingfundamentals">Pentesting Fundamentals</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/offensivesecurityintroc101">Offensive Security Intro</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/passiverecon">Passive Reconnaissance</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/activerecon">Active Reconnaissance</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/furthernmap">Nmap</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/metasploitintro">Metasploit: Introduction</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/hydra">Hydra</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/burpsuiterepeater">Burp Suite: Repeater</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/introwebapplicationsecurity">Web Application Security</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/dvwa">DVWA</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/webgoat">WebGOAT</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/commonattacks">Common Attacks</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/googledorking">Google Dorking</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/shodan">Shodan.io</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/redteamfundamentals">Red Team Fundamentals</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/redteamengagements">Red Team Engagements</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/rppsempire">Empire</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/wifihacking101">Wifi Hacking 101</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/phishinghiddeneye">Phishing: HiddenEye</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li></ul>
+        </article>
+        <article class="cat" id="defensive">
+          <div class="cat-head"><h3>Defensive security &amp; SOC</h3><span class="mono muted">16 rooms</span></div>
+          <p class="muted">SOC Level 1 path in progress: SIEM, threat intel, frameworks and malware basics.</p>
+          <ul class="rooms"><li class="room"><a href="https://tryhackme.com/room/defensivesecurityintroezn39">Defensive Security Intro</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/jrsecanalystintrouxo">Junior Security Analyst Intro</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/introtosiem">Introduction to SIEM</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/cyberthreatintel">Intro to Cyber Threat Intel</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/pyramidofpainax">Pyramid Of Pain</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/cyberkillchainzmt">Cyber Kill Chain</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/unifiedkillchain">Unified Kill Chain</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/memoryanalysisintroduction">Memory Analysis Introduction</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/malmalintroductory">MAL: Malware Introductory</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/historyofmalware">History of Malware</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/vulnerabilities101">Vulnerabilities 101</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/securityengineerintro">Security Engineer Intro</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/securityprinciples">Security Principles</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/cybergovernanceregulation">Governance &amp; Regulation</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/securityawarenessintro">Security Awareness</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/physicalsecurityintro">Physical Security Intro</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li></ul>
+        </article>
+        <article class="cat" id="foundations">
+          <div class="cat-head"><h3>Networking, systems &amp; AD</h3><span class="mono muted">17 rooms</span></div>
+          <p class="muted">The fundamentals underneath everything else.</p>
+          <ul class="rooms"><li class="room"><a href="https://tryhackme.com/room/whatisnetworking">What is Networking?</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/introtolan">Intro to LAN</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/introtonetworking">Introductory Networking</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/networkservices">Network Services</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/networkservices2">Network Services 2</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/dnsindetail">DNS in Detail</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/httpindetail">HTTP in Detail</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/howwebsiteswork">How Websites Work</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/puttingitalltogether">Putting it all together</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/linuxfundamentalspart1">Linux Fundamentals Part 1</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/windowsfundamentals1xbx">Windows Fundamentals 1</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/windowsfundamentals2x0x">Windows Fundamentals 2</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/windowsfundamentals3xzx">Windows Fundamentals 3</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/winadbasics">Active Directory Basics</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/windowsapi">Introduction to Windows API</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/openvpn">OpenVPN</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/torforbeginners">Tor</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li></ul>
+        </article>
+        <article class="cat" id="tools">
+          <div class="cat-head"><h3>Tools, scripting &amp; research</h3><span class="mono muted">11 rooms</span></div>
+          <p class="muted">Day-to-day tooling and research skills.</p>
+          <ul class="rooms"><li class="room"><a href="https://tryhackme.com/room/pythonbasics">Python Basics</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/jupyter101">Jupyter 101</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/rust">Learn Rust</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/django">Introduction to Django</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/flask">Introduction to Flask</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/rptmux">tmux</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/tmuxremux">REmux The Tmux</a><span class="dtag i">info</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/toolboxvim">Toolbox: Vim</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/introtoresearch">Introductory Researching</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/searchskills">Search Skills</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li><li class="room"><a href="https://tryhackme.com/room/geolocatingimages">Geolocating Images</a><span class="dtag e">easy</span><span class="wsoon">write-up soon</span></li></ul>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="wrap">mohamed@benabdallah:~/thm$ cat stats → 91 rooms · top 5%</footer>
+</body>
+</html>

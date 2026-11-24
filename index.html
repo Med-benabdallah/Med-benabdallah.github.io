@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mohamed Benabdallah · Cybersecurity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Single dark theme by choice. Layout idea: a terminal session as the header, then report-style chapters; project cards open a side panel, jobs expand in place. One amber accent, green only for live/ok, red only for severity. */
+  --bg: #0b0e12;
+  --surface: #12171d;
+  --raised: #171d25;
+  --ink: #e6e9ed;
+  --soft: #c9cfd6;
+  --muted: #8a94a1;
+  --line: #222a33;
+  --accent: #f2a541;
+  --ok: #4fc387;
+  --high: #ef5b4c;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --body: "IBM Plex Sans", "Segoe UI", Roboto, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.65 var(--body); -webkit-font-smoothing: antialiased; }
+body.locked { overflow: hidden; }
+a { color: var(--accent); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+.wrap { max-width: 1060px; margin: 0 auto; padding: 0 20px; }
+.mono { font-family: var(--mono); }
+.muted { color: var(--muted); }
+
+/* Nav */
+nav.top { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+nav.top .wrap { display: flex; justify-content: space-between; align-items: center; gap: 16px; height: 56px; }
+.brand { font: 700 14px/1 var(--mono); color: var(--ink); text-decoration: none; }
+.brand span { color: var(--accent); }
+.links { display: flex; gap: 20px; font: 400 13px/1 var(--mono); }
+.links a { color: var(--muted); text-decoration: none; }
+.links a:hover { color: var(--ink); }
+@media (max-width: 640px) { .links { display: none; } }
+
+/* Hero */
+.hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
+#graph { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .55; pointer-events: none; }
+.hero .wrap { position: relative; padding-top: 64px; padding-bottom: 64px; display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; }
+@media (max-width: 880px) { .hero .wrap { grid-template-columns: 1fr; padding-top: 40px; padding-bottom: 40px; } }
+.status { display: inline-flex; align-items: center; gap: 8px; font: 500 12px/1 var(--mono); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); padding: 7px 10px; border-radius: 4px; }
+.status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+h1 { font: 700 clamp(36px, 6vw, 60px)/1.05 var(--mono); letter-spacing: -.03em; margin: 20px 0 14px; text-wrap: balance; }
+.role { font: 500 15px/1.4 var(--mono); color: var(--accent); margin: 0 0 16px; }
+.lede { font-size: 17px; max-width: 54ch; margin: 0 0 26px; color: var(--soft); }
+.ctas { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn { font: 500 13px/1 var(--mono); padding: 12px 16px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #17110a; font-weight: 700; }
+
+/* Terminal */
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; box-shadow: 0 20px 60px -30px #000; }
+.term-bar { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--raised); }
+.term-bar i { width: 10px; height: 10px; border-radius: 50%; background: #2c3540; display: block; }
+.term-bar span { margin-left: 8px; font: 400 12px/1 var(--mono); color: var(--muted); }
+.term pre { margin: 0; padding: 18px; font: 400 13px/1.75 var(--mono); color: var(--soft); white-space: pre-wrap; overflow-x: auto; }
+.p { color: var(--ok); } .c { color: var(--ink); } .k { color: var(--muted); } .v { color: var(--accent); }
+.cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Sections */
+section { padding: 64px 0; border-bottom: 1px solid var(--line); }
+.sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+.sec-head .num { font: 500 13px/1 var(--mono); color: var(--accent); }
+.sec-hint { font: 400 13px/1.5 var(--mono); color: var(--muted); margin: 0 0 24px; }
+h2 { font: 700 26px/1.2 var(--mono); margin: 0; letter-spacing: -.02em; text-wrap: balance; }
+h3 { font: 600 19px/1.3 var(--body); margin: 0; }
+p { margin: 0 0 12px; max-width: 68ch; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 400 12px/1 var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 3px; color: var(--soft); background: var(--bg); }
+
+/* Project cards (clickable) */
+.projects { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 900px) { .projects { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .projects { grid-template-columns: 1fr; } }
+.pcard { text-align: left; font: inherit; color: inherit; cursor: pointer; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 22px; display: grid; gap: 12px; align-content: start; transition: border-color .2s, transform .2s, background .2s; }
+.pcard:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); background: var(--raised); transform: translateY(-2px); }
+.pcard.feature { grid-column: span 2; border-left: 3px solid var(--accent); }
+@media (max-width: 600px) { .pcard.feature { grid-column: auto; } }
+.pcard .meta { font: 400 12px/1.4 var(--mono); color: var(--muted); }
+.pcard .top { display: flex; justify-content: space-between; gap: 10px; align-items: start; }
+.pcard p { margin: 0; color: var(--soft); font-size: 15px; }
+.pcard .open { font: 500 12px/1 var(--mono); color: var(--accent); margin-top: 4px; }
+.pcard:hover .open { text-decoration: underline; text-underline-offset: 3px; }
+.mini-stats { display: flex; gap: 22px; flex-wrap: wrap; }
+.mini-stats div { font: 700 22px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.mini-stats span { display: block; font: 400 12px/1.4 var(--body); color: var(--muted); }
+.sev { font: 700 11px/1 var(--mono); text-transform: uppercase; padding: 5px 7px; border-radius: 3px; white-space: nowrap; }
+.sev.high { color: var(--high); border: 1px solid color-mix(in srgb, var(--high) 50%, transparent); }
+.sev.acc { color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+.sev.ok { color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 45%, transparent); }
+
+/* Experience (expandable) */
+.log { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.log details { border-top: 1px solid var(--line); }
+.log details:first-child { border-top: 0; }
+.log summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 170px 1fr 24px; gap: 20px; padding: 18px 22px; align-items: start; }
+.log summary::-webkit-details-marker { display: none; }
+.log summary:hover { background: var(--raised); }
+.log .when { font: 400 13px/1.6 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.log h3 { font-size: 17px; }
+.log .org { font: 400 13px/1.4 var(--mono); color: var(--accent); margin-top: 2px; }
+.log .one { font-size: 15px; color: var(--soft); margin: 6px 0 0; }
+.log .tog { font: 500 18px/1 var(--mono); color: var(--muted); text-align: right; padding-top: 2px; }
+.log details[open] .tog { color: var(--accent); }
+.log details[open] .tog::after { content: "−"; }
+.log details:not([open]) .tog::after { content: "+"; }
+.log .more { padding: 0 22px 22px calc(170px + 42px); display: grid; gap: 14px; }
+@media (max-width: 640px) {
+  .log summary { grid-template-columns: 1fr 24px; gap: 4px 12px; }
+  .log .when { grid-column: 1 / -1; order: -1; }
+  .log .more { padding: 0 22px 22px; }
+}
+.more h4 { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 8px; }
+ul.points { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+ul.points li { padding-left: 20px; position: relative; color: var(--soft); }
+ul.points li::before { content: ">"; position: absolute; left: 0; color: var(--accent); font-family: var(--mono); }
+.linkbtn { justify-self: start; font: 500 12px/1 var(--mono); color: var(--accent); background: none; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 4px; padding: 9px 12px; cursor: pointer; }
+.linkbtn:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* Skills */
+.skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 24px; margin-top: 20px; }
+.skills h3 { font: 500 12px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 12px; }
+.certs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 28px; }
+.cert { border: 1px solid var(--line); border-radius: 6px; padding: 16px; background: var(--surface); }
+.cert .k2 { font: 400 11px/1 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+.cert .v2 { font: 600 16px/1.35 var(--body); }
+
+/* Contact */
+.contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-top: 20px; }
+.c-item { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: grid; gap: 8px; }
+.c-item .k2 { font: 400 11px/1 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.c-item .val { font: 500 14px/1.4 var(--mono); word-break: break-all; }
+.c-item .btn { justify-self: start; }
+.copied { font: 400 12px/1 var(--mono); color: var(--ok); min-height: 12px; }
+footer { padding: 28px 0 44px; font: 400 12px/1.6 var(--mono); color: var(--muted); }
+
+
+/* Community */
+.mentor { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--ok); border-radius: 8px; padding: 26px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; }
+@media (max-width: 820px) { .mentor { grid-template-columns: 1fr; } }
+.mentor .meta { font: 400 12px/1.4 var(--mono); color: var(--muted); margin-bottom: 8px; }
+.mentor h3 { margin-bottom: 12px; }
+.mentor p { color: var(--soft); }
+.places { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-content: start; }
+.place { border: 1px solid var(--line); border-radius: 6px; padding: 14px; background: var(--bg); }
+.place .n { font: 700 26px/1.1 var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+.place .n sup { font-size: 13px; }
+.place .l { font-size: 13px; color: var(--muted); line-height: 1.4; margin-top: 4px; }
+.place.win { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+.place.win .n { color: var(--ok); }
+@media (max-width: 480px) { .places { grid-template-columns: 1fr 1fr; } }
+
+/* Detail panel */
+.scrim { position: fixed; inset: 0; background: rgba(3,5,8,.66); z-index: 20; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 100%); z-index: 21; background: var(--surface); border-left: 1px solid var(--line); transform: translateX(100%); transition: transform .25s ease; display: flex; flex-direction: column; }
+body.panel-open .scrim { opacity: 1; pointer-events: auto; }
+body.panel-open .panel { transform: none; }
+.panel-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--raised); }
+.panel-bar .path { font: 400 12px/1 var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.panel-bar .path b { color: var(--accent); font-weight: 500; }
+.close { font: 500 12px/1 var(--mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 9px 12px; cursor: pointer; }
+.close:hover { border-color: var(--accent); }
+.panel-body { overflow-y: auto; padding: 26px 24px 40px; display: grid; gap: 24px; align-content: start; }
+.panel-body h2 { font-size: 24px; }
+.panel-body .meta { font: 400 12px/1.5 var(--mono); color: var(--muted); margin-top: 8px; }
+.panel-body h4 { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; }
+.panel-body p { color: var(--soft); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 480px) { .stats { grid-template-columns: 1fr 1fr; } }
+.stat { border-left: 2px solid var(--accent); padding: 2px 0 2px 12px; }
+.stat .n { font: 700 24px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.stat .l { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.diagram { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 14px; overflow-x: auto; }
+.diagram svg { display: block; width: 100%; min-width: 420px; height: auto; }
+.diagram svg text { font-family: var(--mono); }
+.panel-nav { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px; }
+@media (prefers-reduced-motion: reduce) {
+  .cursor { animation: none; }
+  .pcard, .panel, .scrim { transition: none; }
+  .pcard:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="#top">mohamed<span>@</span>benabdallah</a>
+    <div class="links">
+      <a href="#work">work</a><a href="writeups.html">write-ups</a><a href="tryhackme.html">tryhackme</a><a href="#community">community</a><a href="#experience">experience</a><a href="#skills">skills</a><a href="#contact">contact</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <canvas id="graph" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div>
+      <span class="status">open to work · available now</span>
+      <h1>Mohamed Benabdallah</h1>
+      <p class="role">Penetration Tester &amp; Security Engineer · ESPRIT 2026</p>
+      <p class="lede">I map attack surfaces, test web apps and Active Directory, and run my own SOC lab. Looking for a role in penetration testing, security engineering, AppSec or SOC. Based in Tunis, open to relocation.</p>
+      <div class="ctas">
+        <a class="btn primary" href="#contact">Get in touch</a>
+        <a class="btn" href="https://www.linkedin.com/in/benabdallah-mohamed-sec/">LinkedIn ↗</a>
+        <a class="btn" href="https://github.com/Med-benabdallah">GitHub ↗</a>
+        <a class="btn" href="writeups.html">Write-ups</a>
+      </div>
+    </div>
+    <div class="term" role="img" aria-label="Terminal summary: 500 plus assets mapped, about 50 percent recon time saved, 12 plus web findings, TryHackMe top 6 percent">
+      <div class="term-bar"><i></i><i></i><i></i><span>~/profile</span></div>
+<pre><span class="p">$</span> <span class="c" id="typed">whoami --summary</span>
+<span class="k">name     </span> Mohamed Benabdallah
+<span class="k">focus    </span> pentest · security eng · AppSec · SOC
+<span class="k">location </span> Tunis, TN  <span class="k">(relocation: yes)</span>
+
+<span class="p">$</span> <span class="c">cat results.log</span>
+<span class="v">[+]</span> 500+ assets mapped     <span class="k">EASM · Forvis Mazars</span>
+<span class="v">[+]</span> ~50% recon time saved  <span class="k">automated pipeline</span>
+<span class="v">[+]</span> 12+ web findings       <span class="k">2 high · Defensy</span>
+<span class="v">[+]</span> TryHackMe top 5%
+
+<span class="p">$</span> <span class="cursor"></span></pre>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="work">
+    <div class="wrap">
+      <div class="sec-head"><span class="num">01</span><h2>Projects</h2></div>
+      <p class="sec-hint">Click a project to open the details.</p>
+      <div class="projects">
+        <button class="pcard feature" type="button" data-open="easm" id="card-easm">
+          <span class="meta">Forvis Mazars · 02.2026 – 09.2026</span>
+          <div class="top"><h3>External Attack Surface Management platform</h3><span class="sev acc">featured</span></div>
+          <p>Self-hosted, multi-tenant EASM that discovers internet-facing assets and reports only vulnerabilities it can prove, with a local AI as advisor.</p>
+          <div class="mini-stats">
+            <div>500+<span>assets</span></div><div>~20<span>tools chained</span></div><div>~50%<span>less recon time</span></div>
+          </div>
+          <span class="open">open details →</span>
+        </button>
+        <button class="pcard" type="button" data-open="soc-lab" id="card-soc">
+          <span class="meta">Personal project · 12.2024 – 05.2025</span>
+          <div class="top"><h3>Home SOC lab</h3><span class="sev ok">automated</span></div>
+          <p>Honeypot attack to Wazuh alert to enriched TheHive case, automated with Shuffle SOAR and n8n.</p>
+          <div class="chips"><span class="chip">Wazuh</span><span class="chip">TheHive</span><span class="chip">MISP</span><span class="chip">n8n</span></div>
+          <span class="open">open details →</span>
+        </button>
+        <button class="pcard" type="button" data-open="web-pentest" id="card-web">
+          <span class="meta">Defensy · 06.2023 – 08.2023</span>
+          <div class="top"><h3>Web application pentest</h3><span class="sev high">2 high</span></div>
+          <p>12+ vulnerabilities across 2–3 apps: SQLi, broken access control, XSS and auth flaws.</p>
+          <span class="open">open details →</span>
+        </button>
+        <button class="pcard" type="button" data-open="ad-recon" id="card-ad">
+          <span class="meta">TDS by Nomios · 07.2025 – 08.2025</span>
+          <div class="top"><h3>AI-assisted AD recon</h3><span class="sev acc">red team</span></div>
+          <p>Python tool that merges SharpHound, ldapsearch, enum4linux and Impacket output, with an LLM ranking attack paths.</p>
+          <span class="open">open details →</span>
+        </button>
+        <button class="pcard" type="button" data-open="bug-bounty" id="card-bb">
+          <span class="meta">Independent · since 05.2026</span>
+          <div class="top"><h3>Bug bounty research</h3><span class="sev acc">new</span></div>
+          <p>Hunting on HackerOne, Bugcrowd and YesWeHack with my EASM recon workflow.</p>
+          <span class="open">open details →</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section id="writeups">
+    <div class="wrap">
+      <div class="sec-head"><span class="num">02</span><h2>Write-ups</h2></div>
+      <p class="sec-hint">Web security lab write-ups: root cause, exploit and code fix.</p>
+      <div class="projects">
+        <a class="pcard" href="writeups.html#unprotected-admin" style="text-decoration:none">
+          <span class="meta">12 May 2026 · PortSwigger lab</span>
+          <div class="top"><h3>Unprotected Admin Functionality</h3><span class="sev high">access control</span></div>
+          <p>Vertical privilege escalation through an admin panel with no access control.</p>
+          <span class="open">open write-up →</span>
+        </a>
+        <a class="pcard" href="writeups.html#path-traversal" style="text-decoration:none">
+          <span class="meta">2 May 2026 · PortSwigger lab</span>
+          <div class="top"><h3>File Path Traversal</h3><span class="sev high">CWE-22</span></div>
+          <p>Reading files outside the web root through an unsanitised path, tested with Caido.</p>
+          <span class="open">open write-up →</span>
+        </a>
+        <a class="pcard" href="tryhackme.html" style="text-decoration:none">
+          <span class="meta">TryHackMe · erinmin</span>
+          <div class="top"><h3>91 rooms · top 5%</h3><span class="sev ok">practice</span></div>
+          <p>Machines, real CVEs, web attacks and the SOC Level 1 path, grouped by topic.</p>
+          <span class="open">open TryHackMe page →</span>
+        </a>
+        <a class="pcard" href="writeups.html" style="text-decoration:none; border-style:dashed">
+          <span class="meta">Hashnode · Medium</span>
+          <div class="top"><h3>All write-ups</h3></div>
+          <p>The full list, with links to both blogs.</p>
+          <span class="open">open write-ups page →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="community">
+    <div class="wrap">
+      <div class="sec-head"><span class="num">03</span><h2>Community</h2></div>
+      <p class="sec-hint">Giving back to the next students.</p>
+      <article class="mentor">
+        <div>
+          <div class="meta">ESPRIT · 2026 · cybersecurity + AI</div>
+          <h3>Mentor at the CyberIA Hackathon</h3>
+          <p>CyberIA is a hackathon where student teams build AI-powered cybersecurity solutions. I mentored 10–15 students across several teams.</p>
+          <ul class="points">
+            <li>Guided the teams' projects: scope, architecture and tool choices.</li>
+            <li>Taught hands-on techniques from my own work in pentesting, recon and SOC.</li>
+            <li>Reviewed and judged the final projects.</li>
+            <li>Helped organise the event.</li>
+          </ul>
+        </div>
+        <div class="places">
+          <div class="place"><div class="n">10–15</div><div class="l">students mentored</div></div>
+          <div class="place win"><div class="n">4<sup>th</sup></div><div class="l">place for a team I mentored</div></div>
+          <div class="place win"><div class="n">6<sup>th</sup></div><div class="l">place for a team I mentored</div></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section id="experience">
+    <div class="wrap">
+      <div class="sec-head"><span class="num">04</span><h2>Experience</h2></div>
+      <p class="sec-hint">Click a role to expand it.</p>
+      <div class="log">
+        <details id="job-independent">
+          <summary>
+            <span class="when">05.2026 → now</span>
+            <span><h3>Independent Security Researcher</h3><span class="org">Self-employed</span><p class="one">Bug bounty hunting and web security write-ups.</p></span>
+            <span class="tog" aria-hidden="true"></span>
+          </summary>
+          <div class="more">
+            <div><h4>What I do</h4>
+              <ul class="points">
+                <li>Hunt on public programs on HackerOne, Bugcrowd and YesWeHack.</li>
+                <li>Recon and web application testing on in-scope assets, reusing my EASM workflow.</li>
+                <li>Publish write-ups (root cause, exploit, code fix) on Path Traversal (CWE-22) and Broken Access Control.</li>
+              </ul></div>
+            <button class="linkbtn" type="button" data-open="bug-bounty">view project →</button>
+          </div>
+        </details>
+        <details id="job-forvis">
+          <summary>
+            <span class="when">02.2026 → 09.2026</span>
+            <span><h3>Cybersecurity Engineer (final-year project)</h3><span class="org">Forvis Mazars · Cybersecurity Center of Excellence · Tunis</span><p class="one">Designed and built an EASM platform.</p></span>
+            <span class="tog" aria-hidden="true"></span>
+          </summary>
+          <div class="more">
+            <div><h4>What I did</h4>
+              <ul class="points">
+                <li>Designed and built, solo, a self-hosted multi-tenant EASM platform in six iterations.</li>
+                <li>Orchestrated about 20 open-source tools (Subfinder, Amass, Naabu, Nmap, Nuclei, Katana…) into a resumable six-stage scan.</li>
+                <li>Built a four-step false-positive pipeline with an evidence gate: a finding is stored only if our own scan proves it.</li>
+                <li>Added advisory AI scoring with a local LLM (Ollama) and OWASP Top 10 / SOC 2 compliance mapping.</li>
+                <li>Delivered a Next.js + FastAPI + PostgreSQL app: 124 API endpoints, 20 panels, 4 roles, tested tenant isolation.</li>
+              </ul></div>
+            <div><h4>Results</h4>
+              <ul class="points"><li>Live test from one root domain: 9 subdomains, 1,339 URLs, 2 shadow IT assets, 26 verified findings.</li><li>500+ assets mapped across legal test targets.</li><li>About 50% less manual recon time and about 70% lower AI cost.</li></ul></div>
+            <button class="linkbtn" type="button" data-open="easm">view project →</button>
+          </div>
+        </details>
+        <details id="job-tds">
+          <summary>
+            <span class="when">07.2025 → 08.2025</span>
+            <span><h3>Cybersecurity Intern – AI-Assisted AD Reconnaissance</h3><span class="org">TDS by Nomios</span><p class="one">Automated Active Directory reconnaissance into a single run.</p></span>
+            <span class="tog" aria-hidden="true"></span>
+          </summary>
+          <div class="more">
+            <div><h4>What I did</h4>
+              <ul class="points">
+                <li>Automated Active Directory recon for red and blue teams: a manual multi-tool process became a single run.</li>
+                <li>Built a Python parser merging SharpHound, ldapsearch, enum4linux and GetUserSPNs output.</li>
+                <li>Integrated Hugging Face LLMs to surface likely attack paths and high-value accounts.</li>
+                <li>Reported privileged accounts, Kerberoastable / AS-REP accounts and misconfigurations in one file.</li>
+                <li>Tested on a vulnerable AD lab.</li>
+              </ul></div>
+            <button class="linkbtn" type="button" data-open="ad-recon">view project →</button>
+          </div>
+        </details>
+        <details id="job-defensy">
+          <summary>
+            <span class="when">06.2023 → 08.2023</span>
+            <span><h3>Penetration Testing Intern</h3><span class="org">Defensy</span><p class="one">Web application testing against the OWASP Top 10.</p></span>
+            <span class="tog" aria-hidden="true"></span>
+          </summary>
+          <div class="more">
+            <div><h4>What I did</h4>
+              <ul class="points">
+                <li>Tested 2 to 3 internal web applications against the OWASP Top 10 with Burp Suite, Nmap, Wireshark and Metasploit.</li>
+                <li>Found more than 12 vulnerabilities, two rated high severity, including SQL injection, broken access control, XSS and authentication flaws.</li>
+                <li>Scored every finding with CVSS and wrote fix-ready reports, so the riskiest issues were fixed first.</li>
+              </ul></div>
+            <button class="linkbtn" type="button" data-open="web-pentest">view project →</button>
+          </div>
+        </details>
+        <details id="job-his">
+          <summary>
+            <span class="when">08.2024 → 10.2024</span>
+            <span><h3>Web Development &amp; Security Intern</h3><span class="org">Hammamet Informatique Services</span><p class="one">Built, tested and secured a responsive web app.</p></span>
+            <span class="tog" aria-hidden="true"></span>
+          </summary>
+          <div class="more">
+            <div><h4>What I did</h4>
+              <ul class="points">
+                <li>Built and tested a responsive web application.</li>
+                <li>Secured it by hardening the systems and fixing the vulnerabilities I found.</li>
+              </ul></div>
+          </div>
+        </details>
+        <details id="job-esprit">
+          <summary>
+            <span class="when">2021 → 2026</span>
+            <span><h3>Engineering Degree – Computer Science, Cybersecurity</h3><span class="org">ESPRIT · EUR-ACE accredited · Tunisia</span><p class="one">Graduated 2026.</p></span>
+            <span class="tog" aria-hidden="true"></span>
+          </summary>
+          <div class="more">
+            <div><h4>Highlights</h4>
+              <ul class="points">
+                <li>Final-year project: EASM platform at Forvis Mazars.</li>
+                <li>Mentored 10–15 students at the CyberIA Hackathon 2026; two of my teams placed 4th and 6th.</li>
+                <li>Cisco CyberOps Associate and CCNA (SRWE) during studies.</li>
+              </ul></div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap"><button class="linkbtn" type="button" data-open="easm">view final-year project →</button><a class="linkbtn" href="#community" style="text-decoration:none">CyberIA mentoring →</a></div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section id="skills">
+    <div class="wrap">
+      <div class="sec-head"><span class="num">05</span><h2>Skills &amp; certifications</h2></div>
+      <div class="skills">
+        <div><h3>Offensive</h3><div class="chips"><span class="chip">Web app pentest</span><span class="chip">OWASP Top 10</span><span class="chip">Burp Suite</span><span class="chip">Metasploit</span><span class="chip">Nmap</span><span class="chip">Wireshark</span><span class="chip">CVSS</span><span class="chip">AD recon</span><span class="chip">BloodHound</span><span class="chip">NetExec</span><span class="chip">Impacket</span><span class="chip">Kerberoasting</span><span class="chip">Attack surface mapping</span></div></div>
+        <div><h3>Defensive</h3><div class="chips"><span class="chip">Wazuh SIEM</span><span class="chip">Custom Wazuh rules</span><span class="chip">TheHive</span><span class="chip">Cortex</span><span class="chip">MISP</span><span class="chip">Shuffle SOAR</span><span class="chip">n8n</span><span class="chip">Honeypots</span><span class="chip">pfSense</span></div></div>
+        <div><h3>Engineering</h3><div class="chips"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">Next.js</span><span class="chip">PostgreSQL</span><span class="chip">Local LLMs (Ollama)</span><span class="chip">Hugging Face</span><span class="chip">Docker</span><span class="chip">Git</span><span class="chip">Networking</span></div></div>
+      </div>
+      <div class="certs">
+        <div class="cert"><div class="k2">Cisco</div><div class="v2">CyberOps Associate</div></div>
+        <div class="cert"><div class="k2">Cisco</div><div class="v2">CCNA: Switching, Routing &amp; Wireless Essentials</div></div>
+        <div class="cert"><div class="k2">TryHackMe</div><div class="v2"><a href="tryhackme.html">Top 5% · 91 rooms →</a></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="wrap">
+      <div class="sec-head"><span class="num">06</span><h2>Contact</h2></div>
+      <p class="muted">Available immediately. Tunis-based, open to relocation with visa sponsorship or to remote roles across EMEA.</p>
+      <div class="contact-grid">
+        <div class="c-item"><span class="k2">Email · main</span><span class="val" id="email">contact.benabdallah.mohamed@gmail.com</span><button class="btn" type="button" id="copy-email" data-copy="email">Copy email</button><span class="copied" id="copied-email" aria-live="polite"></span></div>
+        <div class="c-item"><span class="k2">Email · ESPRIT</span><span class="val" id="email2">mouhamed.benabdallah@esprit.tn</span><button class="btn" type="button" id="copy-email2" data-copy="email2">Copy email</button><span class="copied" id="copied-email2" aria-live="polite"></span></div>
+        <div class="c-item"><span class="k2">Phone / WhatsApp</span><span class="val" id="phone">+216 56 311 616</span><button class="btn" type="button" id="copy-phone" data-copy="phone">Copy number</button><span class="copied" id="copied-phone" aria-live="polite"></span></div>
+        <div class="c-item"><span class="k2">LinkedIn</span><span class="val">linkedin.com/in/benabdallah-mohamed-sec</span><a class="btn" href="https://www.linkedin.com/in/benabdallah-mohamed-sec/">Open profile ↗</a></div>
+        <div class="c-item"><span class="k2">GitHub</span><span class="val">github.com/Med-benabdallah</span><a class="btn" href="https://github.com/Med-benabdallah">Open GitHub ↗</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">mohamed@benabdallah:~$ exit · Arabic · English · French</footer>
+
+<!-- Detail panel -->
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" aria-hidden="true">
+  <div class="panel-bar">
+    <span class="path" id="panel-path">~/projects/<b></b></span>
+    <button class="close" type="button" id="panel-close">close [esc]</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</aside>
+
+<!-- Project details -->
+<template id="t-easm">
+  <div>
+    <h2 id="panel-title">AI-assisted External Attack Surface Management platform</h2>
+    <div class="meta">Forvis Mazars · Cybersecurity Center of Excellence · final-year project · solo · 02.2026 – 09.2026</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n">~20</div><div class="l">open-source tools in one pipeline</div></div>
+    <div class="stat"><div class="n">500+</div><div class="l">assets mapped across legal test targets</div></div>
+    <div class="stat"><div class="n">~50%</div><div class="l">less manual recon time</div></div>
+    <div class="stat"><div class="n">~70%</div><div class="l">lower AI cost: the LLM only reads final results</div></div>
+    <div class="stat"><div class="n">124</div><div class="l">API endpoints · 20 UI panels</div></div>
+  </div>
+  <div><h4>The problem</h4>
+    <p><b>Visibility:</b> organisations keep adding internet-facing assets (subdomains, cloud buckets, SaaS accounts) that never reach the IT inventory, and an attacker needs only one forgotten system.</p>
+    <p><b>Trust:</b> public vulnerability data is tied to IP addresses. One CDN address can serve hundreds of companies, so a CVE on that IP creates alerts for organisations that aren't affected. Ten alerts, nine false, and the real one gets ignored.</p>
+    <p>Commercial EASM tools discover well but are closed and priced per asset. Open-source frameworks are free but dump raw scanner output with no verification. The goal: <b>search widely, report only what can be proven.</b></p>
+  </div>
+  <div><h4>What I built</h4>
+    <ul class="points">
+      <li>A self-hosted, multi-tenant platform: root domains in, verified findings out, ranked by severity.</li>
+      <li>A six-stage deep scan (launch, discovery, active testing, enrichment, validation and scoring, reporting). A failing tool is skipped and logged, and checkpoints let a scan resume after a restart.</li>
+      <li>Four roles (Super Admin, Administrator, Analyst, Viewer), no self-registration, every status change audited.</li>
+      <li>Compliance mapping of open findings to OWASP Top 10 and SOC 2 controls, exported as JSON, HTML or PDF.</li>
+    </ul></div>
+  <div class="diagram">
+    <h4>False-positive control: prove, then save</h4>
+    <svg viewBox="0 0 460 360" role="img" aria-label="Raw scanner candidates pass wildcard DNS filtering, the evidence gate, noise suppression with six classifiers and lossless deduplication before reaching the analyst">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#8a94a1"/></marker></defs>
+      <g font-size="12" fill="#e6e9ed">
+        <rect x="20" y="10" width="420" height="40" rx="5" fill="#171d25" stroke="#222a33"/>
+        <text x="36" y="35" fill="#8a94a1">Raw scanner candidates</text>
+        <rect x="20" y="74" width="420" height="44" rx="5" fill="#12171d" stroke="#222a33"/>
+        <text x="36" y="101">01  Wildcard DNS filter</text><text x="424" y="101" text-anchor="end" fill="#8a94a1">fake subdomains out</text>
+        <rect x="20" y="142" width="420" height="44" rx="5" fill="#12171d" stroke="#f2a541"/>
+        <text x="36" y="169" fill="#f2a541">02  Evidence gate</text><text x="424" y="169" text-anchor="end" fill="#8a94a1">no proof, no finding</text>
+        <rect x="20" y="210" width="420" height="44" rx="5" fill="#12171d" stroke="#222a33"/>
+        <text x="36" y="237">03  Noise suppression</text><text x="424" y="237" text-anchor="end" fill="#8a94a1">6 classifiers</text>
+        <rect x="20" y="278" width="420" height="44" rx="5" fill="#12171d" stroke="#222a33"/>
+        <text x="36" y="305">04  Lossless deduplication</text><text x="424" y="305" text-anchor="end" fill="#8a94a1">one entry per issue</text>
+        <text x="230" y="352" text-anchor="middle" fill="#4fc387">verified findings → analyst</text>
+      </g>
+      <g stroke="#8a94a1" stroke-width="1.2" fill="none" marker-end="url(#ar)">
+        <line x1="230" y1="50" x2="230" y2="72"/><line x1="230" y1="118" x2="230" y2="140"/>
+        <line x1="230" y1="186" x2="230" y2="208"/><line x1="230" y1="254" x2="230" y2="276"/>
+        <line x1="230" y1="322" x2="230" y2="338"/>
+      </g>
+    </svg>
+  </div>
+  <div><h4>Inside the evidence gate</h4>
+    <ul class="points">
+      <li><b>Drop if:</b> the IP is a shared CDN address, the host isn't owned by the organisation, there's a known contradiction, or the ports don't match our scan.</li>
+      <li><b>Keep only if:</b> our own scan saw the exact software and version named in the CVE. A partial match is still dropped.</li>
+      <li>For extra confirmation, Nuclei can test the live server.</li>
+      <li>Written as a pure function: deterministic and fully testable. A false positive never reaches the database.</li>
+    </ul></div>
+  <div><h4>Scoring and the role of AI</h4>
+    <ul class="points">
+      <li>The scanner severity is authoritative and drives alerts and exports. CVSS, EPSS and CISA KEV are shown for reference.</li>
+      <li>A local LLM (Ollama) gives labels and a plain-text reason; fixed Python rules turn them into an advisory 0–100 score. It also weighs business context: how sensitive the asset is, not how easy it is to exploit.</li>
+      <li>When a case is unclear it asks the analyst instead of guessing. It never changes a severity or status and never tests a discovered credential. No data leaves the infrastructure.</li>
+      <li>The LLM never drives the scanning: it only reads the final, verified results, which cut AI usage cost by about 70%.</li>
+    </ul></div>
+  <div><h4>Live test on brokencrystals.com</h4>
+    <p class="muted" style="margin-bottom:12px">A deliberately vulnerable app that can be scanned legally. Results from one root domain:</p>
+    <div class="stats">
+      <div class="stat"><div class="n">9</div><div class="l">subdomains on 4 IPs</div></div>
+      <div class="stat"><div class="n">11</div><div class="l">open ports</div></div>
+      <div class="stat"><div class="n">1,339</div><div class="l">URLs, 494 auto-flagged</div></div>
+      <div class="stat"><div class="n">2</div><div class="l">shadow IT assets, 1 high risk</div></div>
+      <div class="stat"><div class="n">26</div><div class="l">verified findings: 1 critical, 10 high, 9 medium, 6 low</div></div>
+      <div class="stat"><div class="n">97</div><div class="l">AI score on a critical exposed JSON config, confirmed by a Nuclei PoC</div></div>
+    </div></div>
+  <div><h4>Securing the platform itself</h4>
+    <ul class="points">
+      <li>Tenant isolation tested through the API: same token, own organisation → 200 OK, another organisation's ID → 403 Forbidden.</li>
+      <li>bcrypt passwords, 24 h JWT with no default signing key, discovered secrets masked before storage.</li>
+      <li>One exclusion list respected by every active tool. No exploitation, ever.</li>
+    </ul></div>
+  <div><h4>Hardest problems</h4>
+    <ul class="points">
+      <li><b>Shared CDN IPs</b> produced CVE alerts for unaffected organisations. My first design saved everything and filtered later, but any part of the platform that didn't know about the filter still showed the false alert. I inverted the logic to "prove first, then save", which became the evidence gate.</li>
+      <li><b>Wildcard DNS</b> made every name resolve into thousands of fake subdomains → wildcard detection before any scan.</li>
+      <li><b>Scanning safely and legally</b> → one exclusion list for all tools.</li>
+      <li><b>The machine shut down under load</b> → only one heavy job at a time (a lock with retry) and a larger database connection pool.</li>
+    </ul>
+    <p class="muted" style="margin-top:10px">Main lesson: telling a real vulnerability from an artefact of shared infrastructure took far more work than orchestrating the tools.</p></div>
+  <div><h4>Stack and tools</h4>
+    <div class="chips"><span class="chip">Next.js</span><span class="chip">FastAPI</span><span class="chip">PostgreSQL</span><span class="chip">Ollama</span><span class="chip">Subfinder</span><span class="chip">Amass</span><span class="chip">httpx</span><span class="chip">dnsx</span><span class="chip">Naabu</span><span class="chip">Nmap + NSE</span><span class="chip">Nuclei</span><span class="chip">Katana</span><span class="chip">ffuf</span><span class="chip">Gobuster</span><span class="chip">urlfinder</span><span class="chip">SSLyze</span><span class="chip">TruffleHog</span><span class="chip">cloud_enum</span><span class="chip">NVD</span><span class="chip">EPSS</span><span class="chip">CISA KEV</span><span class="chip">InternetDB</span></div></div>
+</template>
+
+<template id="t-soc-lab">
+  <div>
+    <h2 id="panel-title">Home SOC lab</h2>
+    <div class="meta">Personal project · blue team · 12.2024 – 05.2025 · virtual machines on my laptop</div>
+  </div>
+  <div><h4>Why</h4><p>To practise detection and response end to end, from an attack on a honeypot to an enriched case ready for an analyst, with the same open-source stack many SOCs use.</p></div>
+  <div><h4>How it's built</h4>
+    <ul class="points">
+      <li>Each component runs in its own VM, with pfSense segmenting the lab network.</li>
+      <li>A Cowrie SSH honeypot is the target. I attacked it myself from Kali to generate realistic traffic: brute force, logins and malicious commands.</li>
+      <li>Wazuh collects Cowrie, pfSense and host logs and raises alerts.</li>
+      <li>Response is automated: first with Shuffle SOAR and custom Python/Bash scripts, then with an n8n workflow that creates the alert in TheHive, enriches it with MISP, runs Cortex analyzers and notifies me.</li>
+    </ul></div>
+  <div class="diagram">
+    <h4>Alert pipeline</h4>
+    <svg viewBox="0 0 460 300" role="img" aria-label="Simulated attacks from Kali pass pfSense to the Cowrie honeypot; Wazuh collects logs; n8n sends alerts to TheHive, enriches with MISP, runs Cortex analyzers and sends a notification">
+      <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#8a94a1"/></marker></defs>
+      <g font-size="12" fill="#e6e9ed">
+        <rect x="10" y="14" width="90" height="34" rx="5" fill="#12171d" stroke="#ef5b4c"/><text x="55" y="36" text-anchor="middle" fill="#ef5b4c">Kali</text>
+        <rect x="140" y="14" width="110" height="34" rx="5" fill="#12171d" stroke="#222a33"/><text x="195" y="36" text-anchor="middle">pfSense</text>
+        <rect x="290" y="14" width="160" height="34" rx="5" fill="#12171d" stroke="#222a33"/><text x="370" y="36" text-anchor="middle">Cowrie honeypot</text>
+        <rect x="290" y="96" width="160" height="34" rx="5" fill="#12171d" stroke="#f2a541"/><text x="370" y="118" text-anchor="middle" fill="#f2a541">Wazuh SIEM</text>
+        <rect x="140" y="96" width="110" height="34" rx="5" fill="#12171d" stroke="#222a33"/><text x="195" y="118" text-anchor="middle">n8n</text>
+        <rect x="10" y="190" width="100" height="34" rx="5" fill="#12171d" stroke="#222a33"/><text x="60" y="212" text-anchor="middle">TheHive</text>
+        <rect x="125" y="190" width="100" height="34" rx="5" fill="#12171d" stroke="#222a33"/><text x="175" y="212" text-anchor="middle">MISP</text>
+        <rect x="240" y="190" width="100" height="34" rx="5" fill="#12171d" stroke="#222a33"/><text x="290" y="212" text-anchor="middle">Cortex</text>
+        <rect x="355" y="190" width="95" height="34" rx="5" fill="#12171d" stroke="#222a33"/><text x="402" y="212" text-anchor="middle">Notify</text>
+        <text x="290" y="262" text-anchor="middle" fill="#8a94a1" font-size="11">VirusTotal · AbuseIPDB · MISP</text>
+        <text x="370" y="78" text-anchor="middle" fill="#8a94a1" font-size="11">logs</text>
+        <text x="270" y="90" text-anchor="middle" fill="#8a94a1" font-size="11">alert</text>
+        <text x="370" y="292" text-anchor="middle" fill="#8a94a1" font-size="11"> </text>
+      </g>
+      <g stroke="#8a94a1" stroke-width="1.2" fill="none" marker-end="url(#ar2)">
+        <line x1="100" y1="31" x2="138" y2="31"/><line x1="250" y1="31" x2="288" y2="31"/>
+        <line x1="370" y1="48" x2="370" y2="94"/><line x1="290" y1="113" x2="252" y2="113"/>
+        <line x1="170" y1="130" x2="70" y2="188"/><line x1="185" y1="130" x2="175" y2="188"/>
+        <line x1="205" y1="130" x2="285" y2="188"/><line x1="225" y1="130" x2="395" y2="188"/>
+        <line x1="290" y1="224" x2="290" y2="248"/>
+      </g>
+    </svg>
+  </div>
+  <div><h4>Detections</h4>
+    <ul class="points">
+      <li>Brute force and password spraying against the honeypot, and exploitation of known CVEs.</li>
+      <li>File integrity monitoring (FIM) on sensitive files.</li>
+      <li>Custom Wazuh rules and decoders for Cowrie events, pfSense firewall logs and malicious commands typed in the honeypot.</li>
+    </ul></div>
+  <div><h4>Enrichment</h4>
+    <ul class="points">
+      <li>MISP adds threat intelligence on the attacker's IPs and indicators.</li>
+      <li>Cortex runs VirusTotal, AbuseIPDB and MISP analyzers on each observable.</li>
+    </ul></div>
+  <div><h4>Stack</h4><div class="chips"><span class="chip">Wazuh</span><span class="chip">TheHive</span><span class="chip">Cortex</span><span class="chip">MISP</span><span class="chip">Shuffle SOAR</span><span class="chip">n8n</span><span class="chip">pfSense</span><span class="chip">Cowrie</span><span class="chip">Kali Linux</span></div></div>
+</template>
+
+<template id="t-web-pentest">
+  <div>
+    <h2 id="panel-title">Web application pentest</h2>
+    <div class="meta">Defensy · Penetration Testing Intern · 06.2023 – 08.2023 · 2–3 internal web applications</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n">12+</div><div class="l">vulnerabilities reported</div></div>
+    <div class="stat"><div class="n">2</div><div class="l">rated high severity</div></div>
+    <div class="stat"><div class="n">CVSS</div><div class="l">score on every finding</div></div>
+  </div>
+  <div><h4>What I did</h4>
+    <ul class="points">
+      <li>Ran penetration tests on 2 to 3 internal web applications against the OWASP Top 10.</li>
+      <li>Used Burp Suite for manual testing, with Nmap, Wireshark and Metasploit around it.</li>
+      <li>Scored every finding with CVSS and wrote fix-ready reports, so developers fixed the riskiest issues first.</li>
+    </ul></div>
+  <div><h4>What I found</h4>
+    <ul class="points">
+      <li>More than 12 vulnerabilities, two of them rated high severity.</li>
+      <li>Classes included SQL injection, broken access control, cross-site scripting (XSS) and authentication / session flaws.</li>
+    </ul></div>
+  <div><h4>Tools</h4><div class="chips"><span class="chip">Burp Suite</span><span class="chip">Nmap</span><span class="chip">Wireshark</span><span class="chip">Metasploit</span><span class="chip">OWASP Top 10</span><span class="chip">CVSS</span></div></div>
+</template>
+
+<template id="t-ad-recon">
+  <div>
+    <h2 id="panel-title">AI-assisted Active Directory recon</h2>
+    <div class="meta">TDS by Nomios · Cybersecurity Intern · 07.2025 – 08.2025 · tested on a lab AD</div>
+  </div>
+  <div><h4>The problem</h4><p>The first hours of an internal assessment go into running the same enumeration tools by hand and stitching their output together, for red and blue teams alike.</p></div>
+  <div><h4>What I built</h4>
+    <ul class="points">
+      <li>A Python tool that turns the manual multi-tool AD recon process into a single run.</li>
+      <li>A parser that merges the output of SharpHound, ldapsearch, enum4linux and GetUserSPNs (Impacket), alongside BloodHound, NetExec and ldapdomaindump.</li>
+      <li>Hugging Face LLMs read the merged data to surface likely attack paths and high-value accounts, so teams know what to look at first.</li>
+      <li>Tested against a deliberately vulnerable Active Directory lab.</li>
+    </ul></div>
+  <div><h4>What it reports</h4>
+    <ul class="points">
+      <li>Users, groups and privileged accounts (domain admins and other admin groups).</li>
+      <li>Kerberoastable and AS-REP roastable accounts.</li>
+      <li>Misconfigurations such as weak password policy, risky delegation and dangerous ACLs.</li>
+      <li>Everything collected into one report file, with the AI's suggested attack paths.</li>
+    </ul></div>
+  <div><h4>Stack</h4><div class="chips"><span class="chip">Python</span><span class="chip">SharpHound</span><span class="chip">BloodHound</span><span class="chip">ldapsearch</span><span class="chip">enum4linux</span><span class="chip">Impacket</span><span class="chip">NetExec</span><span class="chip">Hugging Face LLMs</span></div></div>
+</template>
+
+<template id="t-bug-bounty">
+  <div>
+    <h2 id="panel-title">Bug bounty research</h2>
+    <div class="meta">Independent Security Researcher · started 05.2026 · HackerOne · Bugcrowd · YesWeHack</div>
+  </div>
+  <div><h4>What I do</h4>
+    <ul class="points">
+      <li>Hunt on public programs on HackerOne, Bugcrowd and YesWeHack.</li>
+      <li>Apply the recon workflow from my EASM project (subdomain discovery, live hosts, URL crawling) to in-scope assets.</li>
+      <li>Test the web applications I find against the OWASP Top 10, respecting each program's scope and rules.</li>
+    </ul></div>
+  <div><h4>Status</h4><p>Recently started; no accepted reports yet.</p></div>
+  <div><h4>Write-ups</h4>
+    <ul class="points">
+      <li>I publish web security write-ups covering root cause, exploit and code fix: Path Traversal (CWE-22) and Broken Access Control.</li>
+      <li><a href="https://erinmin-writeups.hashnode.dev">erinmin-writeups.hashnode.dev ↗</a> · <a href="https://medium.com/@erinmin56">medium.com/@erinmin56 ↗</a></li>
+    </ul></div>
+  <div><h4>Tools</h4><div class="chips"><span class="chip">Subfinder</span><span class="chip">httpx</span><span class="chip">Katana</span><span class="chip">Nuclei</span><span class="chip">Caido</span><span class="chip">ffuf</span></div></div>
+</template>
+
+<script>
+// Copy buttons
+document.querySelectorAll('[data-copy]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var key = b.getAttribute('data-copy');
+    var text = document.getElementById(key).textContent.trim();
+    var out = document.getElementById('copied-' + key);
+    try {
+      navigator.clipboard.writeText(text).then(function () { out.textContent = 'copied'; },
+        function () { out.textContent = 'select the text to copy it'; });
+    } catch (e) { out.textContent = 'select the text to copy it'; }
+  });
+});
+
+// Detail panel, routed on #easm, #soc-lab, etc.
+(function () {
+  var order = ['easm', 'soc-lab', 'web-pentest', 'ad-recon', 'bug-bounty'];
+  var panel = document.getElementById('panel');
+  var body = document.getElementById('panel-body');
+  var pathB = document.querySelector('#panel-path b');
+  var lastFocus = null;
+
+  function open(id, push) {
+    var t = document.getElementById('t-' + id);
+    if (!t) return;
+    lastFocus = document.activeElement;
+    body.innerHTML = '';
+    body.appendChild(t.content.cloneNode(true));
+    var i = order.indexOf(id);
+    var nav = document.createElement('div');
+    nav.className = 'panel-nav';
+    var prev = order[(i - 1 + order.length) % order.length], next = order[(i + 1) % order.length];
+    nav.innerHTML = '<button class="linkbtn" type="button" data-open="' + prev + '">← previous</button>' +
+                    '<button class="linkbtn" type="button" data-open="' + next + '">next →</button>';
+    body.appendChild(nav);
+    pathB.textContent = id;
+    body.scrollTop = 0;
+    document.body.classList.add('panel-open', 'locked');
+    panel.setAttribute('aria-hidden', 'false');
+    document.getElementById('panel-close').focus();
+    if (push !== false && location.hash !== '#' + id) {
+      try { history.replaceState(null, '', '#' + id); } catch (e) {}
+    }
+  }
+  function close() {
+    document.body.classList.remove('panel-open', 'locked');
+    panel.setAttribute('aria-hidden', 'true');
+    if (order.indexOf(location.hash.slice(1)) > -1) {
+      try { history.replaceState(null, '', '#work'); } catch (e) {}
+    }
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-open]');
+    if (b) { e.preventDefault(); open(b.getAttribute('data-open')); }
+  });
+  document.getElementById('panel-close').addEventListener('click', close);
+  document.getElementById('scrim').addEventListener('click', close);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && document.body.classList.contains('panel-open')) close();
+  });
+  function fromHash() {
+    var h = location.hash.slice(1);
+    if (order.indexOf(h) > -1) open(h, false);
+    else if (document.body.classList.contains('panel-open')) close();
+  }
+  window.addEventListener('hashchange', fromHash);
+  fromHash();
+})();
+
+// Subtle attack-surface graph behind the hero
+(function () {
+  var cv = document.getElementById('graph');
+  if (!cv || !cv.getContext) return;
+  var ctx = cv.getContext('2d');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var nodes = [], W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  function size() {
+    var r = cv.getBoundingClientRect();
+    W = r.width; H = r.height;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var n = Math.round(Math.min(46, W * H / 16000));
+    nodes = [];
+    for (var i = 0; i < n; i++) nodes.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .18, vy: (Math.random() - .5) * .18, hot: Math.random() < .08 });
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < nodes.length; i++) for (var j = i + 1; j < nodes.length; j++) {
+      var a = nodes[i], b = nodes[j], dx = a.x - b.x, dy = a.y - b.y, d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 130) { ctx.strokeStyle = 'rgba(138,148,161,' + (0.22 * (1 - d / 130)) + ')'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+    }
+    nodes.forEach(function (p) { ctx.fillStyle = p.hot ? 'rgba(242,165,65,.9)' : 'rgba(138,148,161,.55)'; ctx.beginPath(); ctx.arc(p.x, p.y, p.hot ? 2.4 : 1.6, 0, Math.PI * 2); ctx.fill(); });
+  }
+  function step() {
+    nodes.forEach(function (p) { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > W) p.vx *= -1; if (p.y < 0 || p.y > H) p.vy *= -1; });
+    draw(); requestAnimationFrame(step);
+  }
+  size(); draw();
+  window.addEventListener('resize', function () { size(); draw(); });
+  if (!reduce) requestAnimationFrame(step);
+})();
+
+// Type the first command once
+(function () {
+  var el = document.getElementById('typed');
+  if (!el || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  var full = el.textContent, i = 0;
+  el.textContent = '';
+  var t = setInterval(function () { i++; el.textContent = full.slice(0, i); if (i >= full.length) clearInterval(t); }, 55);
+})();
+</script>
+</body>
+</html>
